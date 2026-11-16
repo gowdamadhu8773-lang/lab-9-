@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Employee Directory</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+  :root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); --bg:#f3f4f6; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#111827; } }
+  body { background: var(--bg); }
+</style>
+</head>
+<body class="min-h-screen font-sans text-gray-800 dark:text-gray-100">
+<main class="max-w-5xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Employee Directory</h1>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Parsed from XML with <code class="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">DOMParser</code> and rendered dynamically</p>
+  </header>
+
+  <section class="bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Department</th>
+          </tr>
+        </thead>
+        <tbody id="body" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr><td colspan="4" class="px-6 py-10 text-center text-sm text-gray-400">Loading employees…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <p id="count" class="mt-4 text-xs text-gray-400 text-right"></p>
+</main>
+
+<script>
+  // In this hosted demo the XML is embedded as a string. In your real project,
+  // replace XML_TEXT with: const XML_TEXT = await (await fetch("employees.xml")).text();
+  const XML_TEXT = `<?xml version="1.0" encoding="UTF-8"?>
+<employees>
+  <employee><id>101</id><name>Aarav Sharma</name><role>Senior Software Engineer</role><department>Engineering</department></employee>
+  <employee><id>102</id><name>Priya Nair</name><role>Product Designer</role><department>Design</department></employee>
+  <employee><id>103</id><name>Rohan Mehta</name><role>Marketing Manager</role><department>Marketing</department></employee>
+  <employee><id>104</id><name>Sneha Iyer</name><role>HR Business Partner</role><department>Human Resources</department></employee>
+  <employee><id>105</id><name>Karthik Reddy</name><role>Financial Analyst</role><department>Finance</department></employee>
+</employees>`;
+
+  const body = document.getElementById("body");
+  const count = document.getElementById("count");
+  const BADGES = {
+    Engineering: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    Design: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    Marketing: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    "Human Resources": "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+    Finance: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+  };
+  const FALLBACK = "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+  const esc = s => s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const txt = (n, t) => (n.getElementsByTagName(t)[0]?.textContent.trim() ?? "");
+
+  try {
+    const doc = new DOMParser().parseFromString(XML_TEXT, "application/xml");
+    if (doc.getElementsByTagName("parsererror").length) throw new Error("Malformed XML.");
+    const list = Array.from(doc.getElementsByTagName("employee"));
+    body.innerHTML = "";
+    list.forEach(e => {
+      const dept = esc(txt(e, "department"));
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors";
+      tr.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${esc(txt(e, "id"))}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">${esc(txt(e, "name"))}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">${esc(txt(e, "role"))}</td>
+        <td class="px-6 py-4 whitespace-nowrap"><span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold ${BADGES[dept] || FALLBACK}">${dept}</span></td>`;
+      body.appendChild(tr);
+    });
+    count.textContent = `${list.length} employees loaded`;
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-sm text-red-700 dark:text-red-300">
+      Unable to load data: ${esc(err.message)}. Serve the files with VS Code Live Server or
+      <code>python -m http.server 8000</code> in PowerShell.</td></tr>`;
+  }
+</script>
+</body>
+</html>
